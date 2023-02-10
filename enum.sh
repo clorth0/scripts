@@ -15,12 +15,8 @@ read output_type
 echo "Enter verbosity (0 for normal, 1 for verbose, 2 for very verbose, and so on...):"
 read verbosity
 
-echo "Do you want to enable multi-threading? (Y/N) - Note: most of time you do not want to enable this."
-read multi_threading
-
 scan_type=$(echo $scan_type | tr '[:lower:]' '[:upper:]')
 output_type=$(echo $output_type | tr '[:lower:]' '[:upper:]')
-multi_threading=$(echo $multi_threading | tr '[:lower:]' '[:upper:]')
 
 if [ "$scan_type" == "T" ]; then
   scan_option="-sT"
@@ -38,6 +34,8 @@ if [ "$multi_threading" == "Y" ]; then
 else
   scan_option="$scan_option -T0"
 fi
+
+scan_option="$scan_option -T$timing -sV"
 
 if [ "$output_type" == "A" ]; then
   nmap $scan_option -v$verbosity -oN normal_output -oX xml_output -oG grepable_output -oJ json_output $target
