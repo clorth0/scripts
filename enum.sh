@@ -29,12 +29,6 @@ else
   exit 1
 fi
 
-if [ "$multi_threading" == "Y" ]; then
-  scan_option="$scan_option -T$timing"
-else
-  scan_option="$scan_option -T0"
-fi
-
 scan_option="$scan_option -T$timing -sV"
 
 if [ "$output_type" == "A" ]; then
