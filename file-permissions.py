@@ -1,7 +1,15 @@
 import os
+import sys
 
-# Get the file path from user input
-file_path = input("Enter the path of the file: ")
+# Get the file name from command line argument
+if len(sys.argv) < 2:
+    print("Usage: python script.py <filename>")
+    sys.exit()
+    
+filename = sys.argv[1]
+
+# Get the full path of the file
+file_path = os.path.join(os.path.dirname(__file__), filename)
 
 # Get the file permissions using os.stat
 file_mode = os.stat(file_path).st_mode
@@ -26,7 +34,7 @@ permissions = {
 }
 
 # Print the permissions and their meanings
-print("File permissions for {}: ".format(file_path))
+print("File permissions for {}: ".format(filename))
 for role in permissions:
     for permission in permissions[role]:
         print("{} {} permission: {}".format(role.capitalize(), permission, "Allowed" if permissions[role][permission] else "Not allowed"))
