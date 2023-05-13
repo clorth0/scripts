@@ -63,16 +63,18 @@ def check_headers(url):
         else:
             print(Fore.RED + f"The header {header} is missing. This could potentially lead to security vulnerabilities." + Style.RESET_ALL)
 
-def check_website(url):
-    parsed_url = urlparse(url)
-    if not parsed_url.scheme:
-        url = "https://" + url
-    check_ssl(url)
-    check_headers(url)
+    # Check for Server and X-Powered-By headers
+    for header in ['Server', 'X-Powered-By']:
+        if header in headers:
+            print(Fore.RED + f"The header {header} is present, which can reveal information about the server software and its version." + Style.RESET_ALL)
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Check the security of a website.")
-    parser.add_argument("url", help="The URL of the website to check.")
-    args = parser.parse_args()
-    
-    check_website(args.url)
+    # Check Content-Type header
+    if 'Content-Type' not in headers or ';' not in headers['Content-Type']:
+        print(Fore.RED + "The Content-Type header is missing or does not contain a charset. This could potentially lead to security vulnerabilities." + Style.RESET_ALL)
+
+    # Check cookies for Secure and HttpOnly flags
+    if 'Set-Cookie' in headers:
+        if 'Secure' not in headers['Set-Cookie']:
+            print(Fore.RED + "A Set-Cookie header lacks the 'Secure' flag. The Secure flag should be set to ensure that the cookie is only sent over HTTPS." + Style.RESET_ALL)
+        if 'HttpOnly' not in headers['Set-Cookie']:
+            print(Fore.RED + "A Set-Cookie header lacks the 'HttpOnly' flag. The HttpOnly flag should be set to prevent the cookie from being accessed through client-side scripts." + Style.RESET_ALL)
