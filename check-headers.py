@@ -76,39 +76,45 @@ def check_headers(url):
     """Check HTTP security headers of the website."""
     try:
         response = requests.get(url)
-        headers = response.headers
+        headers = {k.lower(): v for k, v in response.headers.items()}
 
         print("Checking headers:")
         for header, value in headers.items():
             print(f"{header}: {value}")
 
-        missing_headers = [header for header in SECURITY_HEADERS if header not in headers]
-        for header in missing_headers:
-            # Add custom messages for each missing header
-            if header == 'Strict-Transport-Security':
-                print(f"{Fore.RED}The Strict-Transport-Security header is missing. This is a serious security risk as it allows connections over HTTP.{Style.RESET_ALL}")
-            elif header == 'Content-Security-Policy':
-                print(f"{Fore.RED}The Content-Security-Policy header is missing. This header can help protect against XSS attacks.{Style.RESET_ALL}")
-            elif header == 'X-Content-Type-Options':
-                print(f"{Fore.RED}The X-Content-Type-Options header is missing. This header can prevent MIME type confusion attacks.{Style.RESET_ALL}")
-            elif header == 'X-Frame-Options':
-                print(f"{Fore.RED}The X-Frame-Options header is missing. This header can help protect against clickjacking attacks.{Style.RESET_ALL}")
-            elif header == 'X-Permitted-Cross-Domain-Policies':
-                print(f"{Fore.RED}The X-Permitted-Cross-Domain-Policies header is missing. This header controls data loading across domains.{Style.RESET_ALL}")
-            elif header == 'Referrer-Policy':
-                print(f"{Fore.RED}The Referrer-Policy header is missing. This header controls how much referrer information should be included with requests.{Style.RESET_ALL}")
-            elif header == 'Clear-Site-Data':
-                print(f"{Fore.RED}The Clear-Site-Data header is missing. This header can clear browser data to prevent information leaks.{Style.RESET_ALL}")
-            elif header == 'Cross-Origin-Embedder-Policy':
-                print(f"{Fore.RED}The Cross-Origin-Embedder-Policy header is missing. This header controls which cross-origin resources can be loaded.{Style.RESET_ALL}")
-            elif header == 'Cross-Origin-Opener-Policy':
-                print(f"{Fore.RED}The Cross-Origin-Opener-Policy header is missing. This header controls cross-origin window interactions.{Style.RESET_ALL}")
-            elif header == 'Cross-Origin-Resource-Policy':
-                print(f"{Fore.RED}The Cross-Origin-Resource-Policy header is missing. This header controls which sites can embed a resource.{Style.RESET_ALL}")
-            elif header == 'Cache-Control':
-                print(f"{Fore.RED}The Cache-Control header is missing. This header controls how a resource is cached.{Style.RESET_ALL}")
-            else:
-                print(HEADER_MISSING_MSG % header)
+        security_headers_lower = [h.lower() for h in SECURITY_HEADERS]
+        missing_headers = [header for header in security_headers_lower if header not in headers]
+        # rest of your code here...
+
+    except Exception as e:
+        print(f"Header check failed: {e}")
+
+for header in missing_headers:
+    # Add custom messages for each missing header
+    if header == 'Strict-Transport-Security':
+        print(f"{Fore.RED}The URL {url} does not have a Strict-Transport-Security header. This is a serious security risk as it allows connections over HTTP.{Style.RESET_ALL}")
+    elif header == 'Content-Security-Policy':
+        print(f"{Fore.RED}The URL {url} does not have a Content-Security-Policy header. This header can help protect against XSS attacks.{Style.RESET_ALL}")
+    elif header == 'X-Content-Type-Options':
+        print(f"{Fore.RED}The URL {url} does not have an X-Content-Type-Options header. This header can prevent MIME type confusion attacks.{Style.RESET_ALL}")
+    elif header == 'X-Frame-Options':
+        print(f"{Fore.RED}The URL {url} does not have an X-Frame-Options header. This header can help protect against clickjacking attacks.{Style.RESET_ALL}")
+    elif header == 'X-Permitted-Cross-Domain-Policies':
+        print(f"{Fore.RED}The URL {url} does not have an X-Permitted-Cross-Domain-Policies header. This header controls data loading across domains.{Style.RESET_ALL}")
+    elif header == 'Referrer-Policy':
+        print(f"{Fore.RED}The URL {url} does not have a Referrer-Policy header. This header controls how much referrer information should be included with requests.{Style.RESET_ALL}")
+    elif header == 'Clear-Site-Data':
+        print(f"{Fore.RED}The URL {url} does not have a Clear-Site-Data header. This header can clear browser data to prevent information leaks.{Style.RESET_ALL}")
+    elif header == 'Cross-Origin-Embedder-Policy':
+        print(f"{Fore.RED}The URL {url} does not have a Cross-Origin-Embedder-Policy header. This header controls which cross-origin resources can be loaded.{Style.RESET_ALL}")
+    elif header == 'Cross-Origin-Opener-Policy':
+        print(f"{Fore.RED}The URL {url} does not have a Cross-Origin-Opener-Policy header. This header controls cross-origin window interactions.{Style.RESET_ALL}")
+    elif header == 'Cross-Origin-Resource-Policy':
+        print(f"{Fore.RED}The URL {url} does not have a Cross-Origin-Resource-Policy header. This header controls which sites can embed a resource.{Style.RESET_ALL}")
+    elif header == 'Cache-Control':
+        print(f"{Fore.RED}The URL {url} does not have a Cache-Control header. This header controls how a resource is cached.{Style.RESET_ALL}")
+    else:
+        print(f"{Fore.RED}The URL {url} is missing the {header} header, which could lead to potential security vulnerabilities.{Style.RESET_ALL}")
 
         # Check for Server and X-Powered-By headers
         for header in ['Server', 'X-Powered-By']:
