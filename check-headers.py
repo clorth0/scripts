@@ -1,30 +1,118 @@
+import argparse
+import subprocess
+import sys
+import pkg_resources
 import requests
+import ssl
+import socket
+from urllib.parse import urlparse
+from datetime import datetime
+from colorama import Fore, Style
 
-def check_vulnerable_headers(url):
-    response = requests.get(url)
-    headers = response.headers
+REQUIRED_PACKAGES = [
+    'requests',
+    'beautifulsoup4',
+    'colorama',
+]
 
-    print("Checking for vulnerable headers...")
-    if "X-Frame-Options" not in headers:
-        print("\033[91m[X] Missing X-Frame-Options header: This may expose your website to clickjacking attacks.\033[0m")
-    if "Content-Security-Policy" not in headers:
-        print("\033[91m[X] Missing Content-Security-Policy header: This may leave your website vulnerable to cross-site scripting (XSS) attacks.\033[0m")
-    if "Strict-Transport-Security" not in headers:
-        print("\033[91m[X] Missing Strict-Transport-Security header: This may make your website susceptible to SSL-stripping attacks.\033[0m")
+SECURITY_HEADERS = [
+    'Strict-Transport-Security',
+    'Content-Security-Policy',
+    'X-Content-Type-Options',
+    'X-Frame-Options',
+    'X-XSS-Protection',
+]
 
-def check_ssl_issues(url):
-    response = requests.get(url, verify=True)
-    if response.status_code == 200:
-        print("Checking for SSL issues...")
-        if not response.url.startswith("https://"):
-            print("\033[91m[X] Insecure SSL connection: Your website is not using a secure (HTTPS) connection.\033[0m")
-        elif response.history and not response.history[0].url.startswith("https://"):
-            print("\033[91m[X] Insecure SSL redirect: Your website is redirecting to an insecure (HTTP) page.\033[0m")
+# Message Constants
+SSL_NOT_HTTPS_MSG = f"{Fore.RED}The website is not using HTTPS. All websites should use HTTPS to ensure data integrity, confidentiality, and authenticity.{Style.RESET_ALL}"
+SSL_EXPIRED_MSG = f"{Fore.RED}The SSL certificate has expired.{Style.RESET_ALL}"
+HEADER_MISSING_MSG = f"{Fore.RED}The header %s is missing. This could potentially lead to security vulnerabilities.{Style.RESET_ALL}"
+SERVER_INFO_MSG = f"{Fore.RED}The header %s is present, which can reveal information about the server software and its version.{Style.RESET_ALL}"
+CONTENT_TYPE_MISSING_MSG = f"{Fore.RED}The Content-Type header is missing or does not contain a charset. This could potentially lead to security vulnerabilities.{Style.RESET_ALL}"
+COOKIE_SECURE_FLAG_MSG = f"{Fore.RED}A Set-Cookie header lacks the 'Secure' flag. The Secure flag should be set to ensure that the cookie is only sent over HTTPS.{Style.RESET_ALL}"
+COOKIE_HTTPONLY_FLAG_MSG = f"{Fore.RED}A Set-Cookie header lacks the 'HttpOnly' flag. The HttpOnly flag should be set to prevent the cookie from being accessed through client-side scripts.{Style.RESET_ALL}"
 
-def check_website_security(url):
-    print("Checking website security for:", url)
-    check_vulnerable_headers(url)
-    check_ssl_issues(url)
 
-# Example usage
-check_website_security("https://example.com")
+def install_required_packages():
+    """Ensure required packages are installed."""
+    for package in REQUIRED_PACKAGES:
+        try:
+            dist = pkg_resources.get_distribution(package)
+            print('{} ({}) is installed'.format(dist.key, dist.version))
+        except pkg_resources.DistributionNotFound:
+            print('{} is NOT installed'.format(package))
+            subprocess.call([sys.executable, "-m", "pip", "install", package])
+
+
+def check_ssl(url):
+    """Check SSL configuration of the website."""
+    parsed_url = urlparse(url)
+    if parsed_url.scheme != "https":
+        print(SSL_NOT_HTTPS_MSG)
+    else:
+        try:
+            hostname = parsed_url.hostname
+            ctx = ssl.create_default_context()
+            with ctx.wrap_socket(socket.socket(), server_hostname=hostname) as s:
+                s.connect((hostname, 443))
+                cert = s.getpeercert()
+
+            # Check SSL expiration
+            not_after = datetime.strptime(cert['notAfter'], r'%b %d %H:%M:%S %Y %Z')
+            if datetime.now() > not_after:
+                print(SSL_EXPIRED_MSG)
+
+        except Exception as e:
+            print(f"SSL check failed: {e}")
+
+
+def check_headers(url):
+    """Check HTTP security headers of the website."""
+    try:
+        response = requests.get(url)
+        headers = response.headers
+
+        print("Checking headers:")
+        for header, value in headers.items():
+            print(f"{header}: {value}")
+
+        missing_headers = [header for header in SECURITY_HEADERS if header not in headers]
+        for header in missing_headers:
+            print(HEADER_MISSING_MSG % header)
+
+        # Check for Server and X-Powered-By headers
+        for header in ['Server', 'X-Powered-By']:
+            if header in headers:
+                print(SERVER_INFO_MSG % header)
+
+        # Check Content-Type header
+        if 'Content-Type' not in headers or ';' not in headers['Content-Type']:
+            print(CONTENT_TYPE_MISSING_MSG)
+
+        # Check cookies for Secure and HttpOnly flags
+        if 'Set-Cookie' in headers:
+            if 'Secure' not in headers['Set-Cookie']:
+                print(COOKIE_SECURE_FLAG_MSG)
+            if 'HttpOnly' not in headers['Set-Cookie']:
+                print(COOKIE_HTTPONLY_FLAG_MSG)
+
+    except Exception as e:
+        print(f"Header check failed: {e}")
+
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description="Check the security of a website.")
+    parser.add_argument("url", help="The URL of the website to check.")
+    return parser.parse_args()
+
+def main():
+    """Main function to run the checks."""
+    args = parse_args()
+    url = args.url
+
+    install_required_packages()
+    check_ssl(url)
+    check_headers(url)
+
+if __name__ == "__main__":
+    main()
