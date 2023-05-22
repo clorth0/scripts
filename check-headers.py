@@ -20,7 +20,6 @@ SECURITY_HEADERS = [
     'Content-Security-Policy',
     'X-Content-Type-Options',
     'X-Frame-Options',
-    'X-XSS-Protection',
 ]
 
 # Message Constants
